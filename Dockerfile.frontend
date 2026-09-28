@@ -1,0 +1,33 @@
+# Stage 1: Build static assets
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend ./
+RUN npm run build
+
+# Stage 2: Serve with Nginx on port 8080 (non-root)
+FROM nginx:alpine
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy build artifacts
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Configure non-root permissions for nginx
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+EXPOSE 8080
+
+USER nginx
+
+CMD ["nginx", "-g", "daemon off;"]

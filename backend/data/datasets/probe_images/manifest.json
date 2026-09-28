@@ -1,0 +1,302 @@
+[
+  {
+    "probe_id": 0,
+    "filename": "probe_clean_00.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 1,
+    "filename": "probe_clean_01.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 2,
+    "filename": "probe_clean_02.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 3,
+    "filename": "probe_clean_03.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 4,
+    "filename": "probe_clean_04.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 5,
+    "filename": "probe_clean_05.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 6,
+    "filename": "probe_clean_06.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 7,
+    "filename": "probe_clean_07.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 8,
+    "filename": "probe_clean_08.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 9,
+    "filename": "probe_clean_09.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 10,
+    "filename": "probe_clean_10.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 11,
+    "filename": "probe_clean_11.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 12,
+    "filename": "probe_clean_12.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 13,
+    "filename": "probe_clean_13.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 14,
+    "filename": "probe_clean_14.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 15,
+    "filename": "probe_clean_15.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 16,
+    "filename": "probe_clean_16.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 17,
+    "filename": "probe_clean_17.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 18,
+    "filename": "probe_clean_18.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 19,
+    "filename": "probe_clean_19.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 20,
+    "filename": "probe_clean_20.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 21,
+    "filename": "probe_clean_21.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 22,
+    "filename": "probe_clean_22.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 23,
+    "filename": "probe_clean_23.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 24,
+    "filename": "probe_clean_24.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 25,
+    "filename": "probe_clean_25.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 26,
+    "filename": "probe_clean_26.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 27,
+    "filename": "probe_clean_27.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 28,
+    "filename": "probe_clean_28.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 29,
+    "filename": "probe_clean_29.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 30,
+    "filename": "probe_clean_30.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 31,
+    "filename": "probe_clean_31.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 32,
+    "filename": "probe_clean_32.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 33,
+    "filename": "probe_clean_33.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 34,
+    "filename": "probe_clean_34.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 35,
+    "filename": "probe_clean_35.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 36,
+    "filename": "probe_clean_36.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 37,
+    "filename": "probe_clean_37.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 38,
+    "filename": "probe_clean_38.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 39,
+    "filename": "probe_clean_39.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 40,
+    "filename": "probe_clean_40.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 41,
+    "filename": "probe_clean_41.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 42,
+    "filename": "probe_clean_42.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 43,
+    "filename": "probe_clean_43.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 44,
+    "filename": "probe_clean_44.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 45,
+    "filename": "probe_clean_45.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 46,
+    "filename": "probe_clean_46.png",
+    "true_class": 1,
+    "true_name": "square"
+  },
+  {
+    "probe_id": 47,
+    "filename": "probe_clean_47.png",
+    "true_class": 2,
+    "true_name": "triangle"
+  },
+  {
+    "probe_id": 48,
+    "filename": "probe_clean_48.png",
+    "true_class": 0,
+    "true_name": "circle"
+  },
+  {
+    "probe_id": 49,
+    "filename": "probe_clean_49.png",
+    "true_class": 1,
+    "true_name": "square"
+  }
+]

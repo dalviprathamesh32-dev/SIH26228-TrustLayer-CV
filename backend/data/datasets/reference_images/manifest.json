@@ -1,0 +1,122 @@
+[
+  {
+    "ref_id": 0,
+    "filename": "ref_circle_00.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 1,
+    "filename": "ref_circle_01.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 2,
+    "filename": "ref_circle_02.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 3,
+    "filename": "ref_circle_03.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 4,
+    "filename": "ref_circle_04.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 5,
+    "filename": "ref_circle_05.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 6,
+    "filename": "ref_circle_06.png",
+    "expected_class": 0,
+    "expected_name": "circle"
+  },
+  {
+    "ref_id": 7,
+    "filename": "ref_square_00.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 8,
+    "filename": "ref_square_01.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 9,
+    "filename": "ref_square_02.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 10,
+    "filename": "ref_square_03.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 11,
+    "filename": "ref_square_04.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 12,
+    "filename": "ref_square_05.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 13,
+    "filename": "ref_square_06.png",
+    "expected_class": 1,
+    "expected_name": "square"
+  },
+  {
+    "ref_id": 14,
+    "filename": "ref_triangle_00.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  },
+  {
+    "ref_id": 15,
+    "filename": "ref_triangle_01.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  },
+  {
+    "ref_id": 16,
+    "filename": "ref_triangle_02.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  },
+  {
+    "ref_id": 17,
+    "filename": "ref_triangle_03.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  },
+  {
+    "ref_id": 18,
+    "filename": "ref_triangle_04.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  },
+  {
+    "ref_id": 19,
+    "filename": "ref_triangle_05.png",
+    "expected_class": 2,
+    "expected_name": "triangle"
+  }
+]
