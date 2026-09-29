@@ -19,9 +19,10 @@ DEFAULT_CONFIG = {
 async def infer(
     file: Optional[UploadFile] = File(None),
     image_b64: Optional[str] = Form(None),
-    model_name: str = Form("trusted"),
+    selected_model: str = Form("trusted", alias="model_name"),
     config_json: Optional[str] = Form(None)
 ):
+    model_name = selected_model
     """
     POST /api/infer
     Performs inference and cryptographically signs a canonical provenance receipt.
