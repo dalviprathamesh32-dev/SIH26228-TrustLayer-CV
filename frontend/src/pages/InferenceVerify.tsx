@@ -440,7 +440,7 @@ export const InferenceVerify: React.FC = () => {
 
                 {/* Canonical Receipt Details Block */}
                 <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1.5 overflow-x-auto shadow-inner">
-                  <div className="text-slate-500 text-[10px]">// RFC 8785 Canonical JSON Digested & Signed</div>
+                  <div className="text-slate-500 text-[10px]">// Deterministic Canonical JSON (RFC 8785 Principles) Digested & Signed</div>
                   <div className="flex items-start gap-2">
                     <span className="text-slate-500 w-28 shrink-0">receipt_id:</span>
                     <span className="text-slate-200 font-semibold">{receipt.receipt_id}</span>

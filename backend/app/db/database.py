@@ -30,9 +30,19 @@ def init_db():
             CREATE TABLE IF NOT EXISTS receipt_nonces (
                 nonce TEXT PRIMARY KEY,
                 receipt_id TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'ISSUED',
+                verification_count INTEGER DEFAULT 0
             );
         """)
+
+        # Ensure schema migration for existing sqlite db instances
+        cursor.execute("PRAGMA table_info(receipt_nonces)")
+        existing_cols = [row["name"] for row in cursor.fetchall()]
+        if "status" not in existing_cols:
+            cursor.execute("ALTER TABLE receipt_nonces ADD COLUMN status TEXT NOT NULL DEFAULT 'ISSUED'")
+        if "verification_count" not in existing_cols:
+            cursor.execute("ALTER TABLE receipt_nonces ADD COLUMN verification_count INTEGER DEFAULT 0")
 
         # Tamper-Evident Audit Ledger Blocks
         cursor.execute("""

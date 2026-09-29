@@ -4,11 +4,11 @@ import zipfile
 import uuid
 import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 
 from app.core.config import DATASETS_DIR, UPLOADS_DIR
-from app.services.data_integrity import DataIntegrityService
+from app.services.data_integrity import DataIntegrityService, parse_coco_json, parse_yolo_annotations
 from app.db.database import db_session
 from app.services.ledger import LedgerService
 
@@ -103,4 +103,33 @@ def get_dataset_analysis(id: str):
     return {
         "dataset_id": id,
         "analysis": analysis
+    }
+
+@router.post("/datasets/ingest/coco")
+def ingest_coco_json(payload: Dict[str, Any]):
+    """
+    POST /api/datasets/ingest/coco
+    Converts and maps standard COCO JSON format into internal TrustLayer-CV manifest format.
+    """
+    manifest = parse_coco_json(payload)
+    return {
+        "status": "success",
+        "sample_count": len(manifest),
+        "manifest": manifest
+    }
+
+@router.post("/datasets/ingest/yolo")
+def ingest_yolo(txt_dir: str = Form(...)):
+    """
+    POST /api/datasets/ingest/yolo
+    Parses a directory of YOLO annotation txt files into internal TrustLayer-CV manifest format.
+    """
+    target = Path(txt_dir)
+    if not target.exists():
+        raise HTTPException(status_code=404, detail=f"Directory '{txt_dir}' not found")
+    manifest = parse_yolo_annotations(target)
+    return {
+        "status": "success",
+        "sample_count": len(manifest),
+        "manifest": manifest
     }

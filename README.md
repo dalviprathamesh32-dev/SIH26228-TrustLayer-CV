@@ -4,7 +4,7 @@
 [![Status: Certified](https://img.shields.io/badge/PS-SIH26228-emerald.svg)](docs/COVERAGE.md)
 [![Mode: 100% Offline](https://img.shields.io/badge/Mode-Offline%20Air--Gapped-cyan.svg)](docs/ARCHITECTURE.md)
 
-**TrustLayer-CV** is an offline cryptographic assurance and provenance layer for Computer Vision pipelines (SIH 2026 Problem Statement **SIH26228**). It provides provable guarantees that training data, trained models, runtime configurations, and inference outputs remain mathematically bound and free from tampering or substitution.
+**TrustLayer-CV** is an offline cryptographic assurance and provenance layer for Computer Vision pipelines (SIH 2026 Problem Statement **SIH26228**). It creates cryptographically signed provenance records that bind declared input, model, configuration and inference output, enabling deterministic detection of tampering or substitution within the protected boundary.
 
 ---
 
@@ -14,7 +14,7 @@
 2. **Model Substitution Detection**: Binary SHA-256 digest comparison against trusted registry baseline.
 3. **Model Behavioral Fingerprinting**: 20 fixed reference shapes identify weight permutation or replacement models.
 4. **Tested-Family Trigger Probe**: Probes 12 combinations (4 corners $\times$ 3 deterministic patterns) across 50 clean images to catch backdoor trojans.
-5. **Cryptographic Inference Provenance**: Canonical JSON RFC 8785 representation signed with Ed25519; verified field-by-field.
+5. **Cryptographic Inference Provenance**: Deterministic Canonical JSON (RFC 8785 Principles) representation signed with Ed25519; verified field-by-field against pinned root trust anchor.
 6. **Replay Protection**: Stateful SQLite nonce table prevents receipt replay attacks.
 7. **Tamper-Evident Audit Ledger**: Append-only SQLite hash-chained ledger protected by database triggers and Ed25519 signatures.
 8. **Data Integrity & Contributor Scoring**: Identifies label inconsistencies via k-NN consensus, near-duplicates via dHash (MAE < 0.012), and OOD geometry, aggregating risks per contributor.

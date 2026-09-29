@@ -9,7 +9,8 @@ from app.core.config import (
 )
 from app.core.crypto import (
     sha256_bytes, sha256_canonical, sha256_file,
-    sign_canonical_payload, verify_canonical_payload, get_key_manager
+    sign_canonical_payload, verify_canonical_payload, get_key_manager,
+    get_trusted_public_key_hex, verify_canonical_with_trusted_key
 )
 from app.db.database import db_session
 from app.services.ledger import LedgerService
@@ -58,20 +59,22 @@ class ProvenanceService:
 
         # Sign canonical representation
         signature = sign_canonical_payload(receipt_payload)
-        public_key_hex = get_key_manager().get_public_key_hex()
+        public_key_hex = get_trusted_public_key_hex()
+        signer_key_id = f"ed25519:{public_key_hex[:16]}"
 
-        # Record nonce in database
+        # Record fresh nonce in database
         with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO receipt_nonces (nonce, receipt_id, created_at) VALUES (?, ?, ?)",
+                "INSERT INTO receipt_nonces (nonce, receipt_id, created_at, status, verification_count) VALUES (?, ?, ?, 'ISSUED', 0)",
                 (nonce, receipt_id, timestamp)
             )
 
         full_receipt = {
             **receipt_payload,
             "signature": signature,
-            "public_key": public_key_hex
+            "public_key": public_key_hex,
+            "signer_key_id": signer_key_id
         }
 
         # Append audit ledger block
@@ -167,9 +170,14 @@ class ProvenanceService:
             "observed": observed_output_hash
         }
 
-        # 5. Signature Verification
+        # 5. Cryptographic Signature Verification using Pinned Root Trust Anchor
         receipt_sig = receipt.get("signature", "")
         receipt_pubkey = receipt.get("public_key")
+        receipt_signer_key_id = receipt.get("signer_key_id")
+
+        trusted_pubkey_hex = get_trusted_public_key_hex()
+        trusted_key_id = f"ed25519:{trusted_pubkey_hex[:16]}"
+
         payload_to_verify = {
             "receipt_id": receipt.get("receipt_id"),
             "input_sha256": receipt_input_hash,
@@ -181,37 +189,68 @@ class ProvenanceService:
             "previous_receipt_hash": receipt.get("previous_receipt_hash")
         }
 
-        sig_pass = verify_canonical_payload(payload_to_verify, receipt_sig, receipt_pubkey)
-        if not sig_pass:
+        # Compare receipt-supplied key against pinned trusted root public key
+        is_untrusted_key = False
+        if receipt_pubkey and receipt_pubkey.lower() != trusted_pubkey_hex.lower():
+            is_untrusted_key = True
+        if receipt_signer_key_id and receipt_signer_key_id != trusted_key_id and receipt_signer_key_id.lower() != trusted_pubkey_hex.lower():
+            is_untrusted_key = True
+
+        if is_untrusted_key:
+            sig_pass = False
+            sig_observed = "SIGNATURE_INVALID: UNTRUSTED_SIGNER_KEY"
             all_passed = False
+        else:
+            # Verify signature STRICTLY using the pinned trusted root public key
+            sig_pass = verify_canonical_with_trusted_key(payload_to_verify, receipt_sig)
+            if not sig_pass:
+                all_passed = False
+                sig_observed = "SIGNATURE_INVALID: VERIFICATION_FAILED"
+            else:
+                sig_observed = "VALID"
+
         results["SIGNATURE"] = {
             "status": "PASS" if sig_pass else "FAIL",
-            "expected": f"VALID_ED25519_SIG({receipt_sig[:12]}...)",
-            "observed": "VALID" if sig_pass else "INVALID_SIGNATURE"
+            "expected": f"PINNED_ROOT_KEY({trusted_pubkey_hex[:12]}...)",
+            "observed": sig_observed
         }
 
-        # 6. Nonce / Replay Verification
+        # 6. Real Nonce Freshness & Replay Verification
         receipt_nonce = receipt.get("nonce", "")
         with db_session() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT nonce, receipt_id FROM receipt_nonces WHERE nonce = ?", (receipt_nonce,))
+            cursor.execute(
+                "SELECT nonce, receipt_id, created_at, status, verification_count FROM receipt_nonces WHERE nonce = ?",
+                (receipt_nonce,)
+            )
             row = cursor.fetchone()
 
-        if simulate_replay:
-            nonce_pass = False
-            nonce_observed = "REPLAY_DETECTED (Duplicate nonce reused in unauthorized context)"
-            all_passed = False
-        elif not row:
+        if not row:
             nonce_pass = False
             nonce_observed = "UNREGISTERED_NONCE (Receipt nonce not found in state store)"
             all_passed = False
+        elif row["created_at"] != receipt.get("timestamp"):
+            nonce_pass = False
+            nonce_observed = "NONCE: FAIL (REPLAY_DETECTED: Timestamp mismatch)"
+            all_passed = False
+        elif row["verification_count"] > 0 or row["status"] == "AUTHENTICATED" or simulate_replay:
+            nonce_pass = False
+            nonce_observed = "NONCE: FAIL (REPLAY_DETECTED)"
+            all_passed = False
         else:
             nonce_pass = True
-            nonce_observed = f"VALID_REGISTERED_NONCE({receipt_nonce[:8]}...)"
+            nonce_observed = f"VALID_FRESH_NONCE({receipt_nonce[:8]}...)"
+            # Authenticate the nonce in state store to block subsequent replay submissions
+            with db_session() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE receipt_nonces SET status = 'AUTHENTICATED', verification_count = verification_count + 1 WHERE nonce = ?",
+                    (receipt_nonce,)
+                )
 
         results["NONCE"] = {
             "status": "PASS" if nonce_pass else "FAIL",
-            "expected": f"UNIQUE_REGISTERED_NONCE({receipt_nonce[:8]}...)",
+            "expected": "FRESH_UNAUTHENTICATED_NONCE",
             "observed": nonce_observed
         }
 
@@ -232,16 +271,20 @@ class ProvenanceService:
             "observed": ts_observed
         }
 
-        # 8. Previous Receipt Hash Verification
+        # 8. Previous Receipt Hash Verification against Ledger Chain Anchor
         prev_hash = receipt.get("previous_receipt_hash", "")
-        prev_pass = bool(prev_hash and len(prev_hash) == 64 and all(c in "0123456789abcdef" for c in prev_hash.lower()))
+        expected_chain_hash = LedgerService.get_receipt_chain_anchor(receipt)
+        prev_pass = bool(prev_hash and prev_hash.lower() == expected_chain_hash.lower())
         if not prev_pass:
             all_passed = False
+            prev_observed = "PREVIOUS_RECEIPT: FAIL (CHAIN_HASH_MISMATCH)"
+        else:
+            prev_observed = f"VALID_CHAIN_HASH({expected_chain_hash[:12]}...)"
 
         results["PREVIOUS_RECEIPT"] = {
             "status": "PASS" if prev_pass else "FAIL",
-            "expected": "VALID_64_CHAR_HEX_CHAIN_DIGEST",
-            "observed": f"CHAIN_DIGEST({prev_hash[:12]}...)" if prev_pass else "INVALID_CHAIN_DIGEST"
+            "expected": expected_chain_hash,
+            "observed": prev_observed
         }
 
         overall_status = "PASS" if all_passed else "FAIL"

@@ -46,6 +46,102 @@ def compute_dhash(img: Image.Image, hash_size: int = 8) -> int:
 def hamming_distance(h1: int, h2: int) -> int:
     return bin(h1 ^ h2).count("1")
 
+def parse_coco_json(coco_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Ingestion adapter: maps standard COCO JSON format (images, categories, annotations)
+    into the internal TrustLayer-CV dataset manifest format.
+    """
+    categories = {cat["id"]: cat.get("name", f"class_{cat['id']}") for cat in coco_dict.get("categories", [])}
+    
+    # Map image annotations
+    img_to_cats = {}
+    for ann in coco_dict.get("annotations", []):
+        img_id = ann.get("image_id")
+        cat_id = ann.get("category_id")
+        if img_id not in img_to_cats:
+            img_to_cats[img_id] = cat_id
+
+    manifest = []
+    for idx, img in enumerate(coco_dict.get("images", [])):
+        img_id = img.get("id", idx)
+        filename = img.get("file_name", f"image_{img_id}.png")
+        cat_id = img_to_cats.get(img_id, img.get("category_id", 0))
+        label_name = categories.get(cat_id, CLASS_NAMES.get(cat_id, "circle"))
+        class_id = int(cat_id) if isinstance(cat_id, int) else CLASS_IDS.get(label_name, 0)
+        contributor_id = img.get("contributor") or img.get("contributor_id") or "contributor_coco"
+
+        manifest.append({
+            "sample_id": f"s_{len(manifest):04d}",
+            "filename": filename,
+            "contributor_id": contributor_id,
+            "label": label_name,
+            "class_id": class_id,
+            "is_poisoned": img.get("is_poisoned", False),
+            "is_ood": img.get("is_ood", False),
+            "is_duplicate": img.get("is_duplicate", False),
+            "has_trigger": img.get("has_trigger", False)
+        })
+
+    return manifest
+
+def parse_yolo_annotations(txt_dir: Path | str) -> List[Dict[str, Any]]:
+    """
+    Ingestion adapter: maps YOLO TXT label files (<class_id> <x_center> <y_center> <w> <h>)
+    in a directory to the internal TrustLayer-CV dataset manifest format.
+    """
+    target_dir = Path(txt_dir)
+    txt_files = list(target_dir.glob("*.txt"))
+    if not txt_files and (target_dir / "labels").exists():
+        txt_files = list((target_dir / "labels").glob("*.txt"))
+
+    # Exclude non-sample files like classes.txt
+    txt_files = [f for f in txt_files if f.name not in ["classes.txt", "readme.txt", "notes.txt"]]
+
+    manifest = []
+    for idx, txt_path in enumerate(sorted(txt_files)):
+        class_id = 0
+        try:
+            with open(txt_path, "r", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+                if first_line:
+                    class_id = int(first_line.split()[0])
+        except Exception:
+            class_id = 0
+
+        label_name = CLASS_NAMES.get(class_id, f"class_{class_id}")
+        stem = txt_path.stem
+        # Check if matching image file exists
+        img_name = f"{stem}.png"
+        for ext in [".png", ".jpg", ".jpeg", ".bmp"]:
+            if (target_dir / f"{stem}{ext}").exists():
+                img_name = f"{stem}{ext}"
+                break
+            elif (target_dir / "images" / f"{stem}{ext}").exists():
+                img_name = f"images/{stem}{ext}"
+                break
+
+        contributor_id = "contributor_yolo"
+        if "alice" in stem.lower():
+            contributor_id = "contributor_alice"
+        elif "bob" in stem.lower():
+            contributor_id = "contributor_bob"
+        elif "mallory" in stem.lower():
+            contributor_id = "contributor_mallory"
+
+        manifest.append({
+            "sample_id": f"s_{len(manifest):04d}",
+            "filename": img_name,
+            "contributor_id": contributor_id,
+            "label": label_name,
+            "class_id": class_id,
+            "is_poisoned": "poison" in stem.lower(),
+            "is_ood": "ood" in stem.lower(),
+            "is_duplicate": "duplicate" in stem.lower(),
+            "has_trigger": "trigger" in stem.lower()
+        })
+
+    return manifest
+
 class DataIntegrityService:
     @staticmethod
     def analyze_dataset(dataset_dir: Path) -> Dict[str, Any]:
@@ -57,11 +153,35 @@ class DataIntegrityService:
         4. Contributor risk aggregation
         """
         manifest_file = dataset_dir / "manifest.json"
-        if not manifest_file.exists():
-            raise FileNotFoundError(f"Manifest not found in {dataset_dir}")
+        manifest: List[Dict[str, Any]] = []
 
-        with open(manifest_file) as f:
-            manifest: List[Dict[str, Any]] = json.load(f)
+        if manifest_file.exists():
+            with open(manifest_file) as f:
+                manifest = json.load(f)
+        else:
+            # Check for COCO JSON files
+            coco_candidates = list(dataset_dir.glob("*.json")) + list(dataset_dir.glob("annotations/*.json"))
+            coco_candidates = [p for p in coco_candidates if p.name != "manifest.json"]
+            for cand in coco_candidates:
+                try:
+                    with open(cand, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if isinstance(data, dict) and ("images" in data or "categories" in data):
+                        manifest = parse_coco_json(data)
+                        break
+                except Exception:
+                    continue
+
+            # If still not found, check for YOLO annotations
+            if not manifest:
+                manifest = parse_yolo_annotations(dataset_dir)
+
+            if not manifest:
+                raise FileNotFoundError(f"Manifest not found in {dataset_dir} (no manifest.json, COCO json, or YOLO annotations found)")
+
+            # Cache the parsed manifest for subsequent runs
+            with open(manifest_file, "w") as f:
+                json.dump(manifest, f, indent=2)
 
         samples = []
         features_list = []

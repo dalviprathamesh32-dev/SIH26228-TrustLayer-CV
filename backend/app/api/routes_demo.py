@@ -50,7 +50,7 @@ def simulate_tamper(req: TamperDemoRequest):
 
     inf_res = ModelRunner.run_inference(clean_bytes, "trusted")
     default_config = {
-        "architecture": "TinyCNN-ONNX",
+        "architecture": "Reference ONNX Classifier",
         "input_shape": [1, 3, 64, 64],
         "normalization": "div_255",
         "version": "1.0.0"
@@ -97,8 +97,17 @@ def simulate_tamper(req: TamperDemoRequest):
         tamper_narrative = "Attacker modified pipeline runtime configuration parameter post-issuance."
 
     elif t_type == "replay":
-        simulate_replay = True
-        tamper_narrative = "Attacker replayed an expired/already logged nonce receipt into pipeline."
+        # First authenticate the receipt legitimately to log the nonce into SQLite
+        ProvenanceService.verify_provenance(
+            image_bytes=tampered_image_bytes,
+            model_name=tampered_model_name,
+            config=tampered_config,
+            output=tampered_output,
+            receipt=receipt
+        )
+        # Re-submission of this identical receipt will now naturally trigger REPLAY_DETECTED
+        simulate_replay = False
+        tamper_narrative = "Attacker re-submitted an already authenticated/logged receipt nonce into pipeline."
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown tamper_type: {req.tamper_type}")

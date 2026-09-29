@@ -11,7 +11,7 @@
    * Attackers do not have root-level memory dump or physical extraction access to the private Ed25519 signing key.
 
 3. **Deterministic Canonicalization**:
-   * Verification engines on client and server agree on RFC 8785 JSON canonicalization rules (sorted keys, consistent float precision, UTF-8 encoding).
+   * Verification engines on client and server agree on Deterministic Canonical JSON (RFC 8785 Principles) rules (sorted keys, consistent float precision, UTF-8 encoding).
 
 4. **Reference Baseline Availability**:
    * A certified clean baseline dataset exists to seed the initial k-NN neighborhood consensus and model behavioral fingerprint suite.

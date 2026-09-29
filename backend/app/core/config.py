@@ -31,3 +31,7 @@ GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000
 CLASS_NAMES = {0: "circle", 1: "square", 2: "triangle"}
 CLASS_IDS = {"circle": 0, "square": 1, "triangle": 2}
 IMAGE_SIZE = (64, 64)
+
+# Standard Terminology Constants
+DEFAULT_MODEL_ARCHITECTURE = "Reference ONNX Classifier"
+CANONICAL_JSON_STANDARD = "Deterministic Canonical JSON (RFC 8785 Principles)"

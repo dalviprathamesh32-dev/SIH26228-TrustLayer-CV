@@ -8,7 +8,7 @@ from app.services.provenance import ProvenanceService
 router = APIRouter()
 
 DEFAULT_CONFIG = {
-    "architecture": "TinyCNN-ONNX",
+    "architecture": "Reference ONNX Classifier",
     "input_shape": [1, 3, 64, 64],
     "normalization": "div_255",
     "classes": ["circle", "square", "triangle"],

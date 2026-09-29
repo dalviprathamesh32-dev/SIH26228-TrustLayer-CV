@@ -1,6 +1,8 @@
 import pytest
 import io
 from PIL import Image
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
 from app.db.database import init_db
 from app.core.config import DATASETS_DIR
 from app.services.model_runner import ModelRunner
@@ -22,7 +24,7 @@ def get_test_image_bytes():
 
 def test_valid_inference_receipt():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     
     receipt = ProvenanceService.create_inference_receipt(
@@ -35,6 +37,7 @@ def test_valid_inference_receipt():
     assert "receipt_id" in receipt
     assert "signature" in receipt
     assert "public_key" in receipt
+    assert "signer_key_id" in receipt
     assert receipt["input_sha256"] != ""
 
     # Verify receipt passes
@@ -52,7 +55,7 @@ def test_valid_inference_receipt():
 
 def test_input_tamper_detection():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=image_bytes,
@@ -79,7 +82,7 @@ def test_input_tamper_detection():
 
 def test_model_tamper_detection():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=image_bytes,
@@ -102,7 +105,7 @@ def test_model_tamper_detection():
 
 def test_output_tamper_detection():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=image_bytes,
@@ -129,7 +132,7 @@ def test_output_tamper_detection():
 
 def test_config_tamper_detection():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=image_bytes,
@@ -155,7 +158,7 @@ def test_config_tamper_detection():
 
 def test_replay_detection():
     image_bytes = get_test_image_bytes()
-    config = {"architecture": "TinyCNN", "version": "1.0.0"}
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
     inf = ModelRunner.run_inference(image_bytes, "trusted")
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=image_bytes,
@@ -164,26 +167,88 @@ def test_replay_detection():
         output=inf["output"]
     )
 
-    # Normal verification passes
+    # 1. First legitimate verification passes
     verify_normal = ProvenanceService.verify_provenance(
         image_bytes=image_bytes,
         model_name="trusted",
         config=config,
         output=inf["output"],
-        receipt=receipt,
-        simulate_replay=False
+        receipt=receipt
     )
+    assert verify_normal["overall_status"] == "PASS"
     assert verify_normal["fields"]["NONCE"]["status"] == "PASS"
 
-    # Simulated replay: resubmitting with replay flag
+    # 2. Natural replay re-submission of exact same receipt WITHOUT any simulation flag
     verify_replay = ProvenanceService.verify_provenance(
         image_bytes=image_bytes,
         model_name="trusted",
         config=config,
         output=inf["output"],
-        receipt=receipt,
-        simulate_replay=True
+        receipt=receipt
     )
     assert verify_replay["overall_status"] == "FAIL"
     assert verify_replay["fields"]["NONCE"]["status"] == "FAIL"
     assert "REPLAY_DETECTED" in verify_replay["fields"]["NONCE"]["observed"]
+
+def test_untrusted_signer_key_rejected():
+    image_bytes = get_test_image_bytes()
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
+    inf = ModelRunner.run_inference(image_bytes, "trusted")
+    receipt = ProvenanceService.create_inference_receipt(
+        image_bytes=image_bytes,
+        model_name="trusted",
+        config=config,
+        output=inf["output"]
+    )
+
+    # Create a rogue untrusted key pair
+    rogue_private = ed25519.Ed25519PrivateKey.generate()
+    rogue_public_bytes = rogue_private.public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    )
+    rogue_pubkey_hex = rogue_public_bytes.hex()
+
+    # Tamper receipt to supply untrusted public key
+    tampered_receipt = dict(receipt)
+    tampered_receipt["public_key"] = rogue_pubkey_hex
+    tampered_receipt["signer_key_id"] = f"ed25519:{rogue_pubkey_hex[:16]}"
+
+    verify_res = ProvenanceService.verify_provenance(
+        image_bytes=image_bytes,
+        model_name="trusted",
+        config=config,
+        output=inf["output"],
+        receipt=tampered_receipt
+    )
+
+    assert verify_res["overall_status"] == "FAIL"
+    assert verify_res["fields"]["SIGNATURE"]["status"] == "FAIL"
+    assert "UNTRUSTED_SIGNER_KEY" in verify_res["fields"]["SIGNATURE"]["observed"]
+
+def test_previous_receipt_hash_mismatch():
+    image_bytes = get_test_image_bytes()
+    config = {"architecture": "Reference ONNX Classifier", "version": "1.0.0"}
+    inf = ModelRunner.run_inference(image_bytes, "trusted")
+    receipt = ProvenanceService.create_inference_receipt(
+        image_bytes=image_bytes,
+        model_name="trusted",
+        config=config,
+        output=inf["output"]
+    )
+
+    # Tamper with previous_receipt_hash to a random valid-looking hex digest
+    tampered_receipt = dict(receipt)
+    tampered_receipt["previous_receipt_hash"] = "deadbeef" * 8
+
+    verify_res = ProvenanceService.verify_provenance(
+        image_bytes=image_bytes,
+        model_name="trusted",
+        config=config,
+        output=inf["output"],
+        receipt=tampered_receipt
+    )
+
+    assert verify_res["overall_status"] == "FAIL"
+    assert verify_res["fields"]["PREVIOUS_RECEIPT"]["status"] == "FAIL"
+    assert "CHAIN_HASH_MISMATCH" in verify_res["fields"]["PREVIOUS_RECEIPT"]["observed"]

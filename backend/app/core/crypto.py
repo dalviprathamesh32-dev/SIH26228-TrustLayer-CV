@@ -102,8 +102,40 @@ class Ed25519KeyManager:
 def get_key_manager() -> Ed25519KeyManager:
     return Ed25519KeyManager.get_instance()
 
+def load_trusted_root_public_key() -> ed25519.Ed25519PublicKey:
+    """Loads the trusted public key directly from secrets storage as the pinned root trust anchor."""
+    if not PUBLIC_KEY_PATH.exists():
+        # Ensure key pair is generated if not yet present
+        get_key_manager()
+    with open(PUBLIC_KEY_PATH, "rb") as f:
+        return serialization.load_pem_public_key(f.read())
+
+def get_trusted_public_key_hex() -> str:
+    """Returns the raw 32-byte hex string of the pinned trusted root public key."""
+    pub_key = load_trusted_root_public_key()
+    raw_bytes = pub_key.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    )
+    return raw_bytes.hex()
+
 def sign_canonical_payload(payload: Any) -> str:
     return get_key_manager().sign_canonical(payload)
 
 def verify_canonical_payload(payload: Any, signature_hex: str, public_key_hex: str | None = None) -> bool:
     return get_key_manager().verify_canonical(payload, signature_hex, public_key_hex)
+
+def verify_canonical_with_trusted_key(obj: Any, signature_hex: str) -> bool:
+    """
+    Cryptographically verifies the canonical payload signature STRICTLY using
+    the pinned trusted root public key from disk, ignoring any receipt-supplied keys.
+    """
+    try:
+        trusted_pub = load_trusted_root_public_key()
+        sig_bytes = bytes.fromhex(signature_hex)
+        msg_bytes = canonical_bytes(obj)
+        trusted_pub.verify(sig_bytes, msg_bytes)
+        return True
+    except Exception:
+        return False
+

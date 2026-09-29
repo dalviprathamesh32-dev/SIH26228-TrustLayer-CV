@@ -6,7 +6,7 @@ Problem Statement: **SIH26228** — Trustworthy Computer Vision Integrity Assura
 
 ## 1. Supported Capabilities (Guaranteed Detection)
 
-The TrustLayer-CV architecture provides deterministic cryptographic and statistical assurance for the following integrity guarantees:
+The TrustLayer-CV architecture creates cryptographically signed provenance records that bind declared input, model, configuration and inference output, enabling deterministic detection of tampering or substitution within the protected boundary:
 
 * **Input Image Tampering Detection**:
   * SHA-256 byte digest computation over raw pixel arrays at ingestion/inference.
@@ -21,7 +21,7 @@ The TrustLayer-CV architecture provides deterministic cryptographic and statisti
   * Quantifies prediction discrepancies when evaluating black-box replacement models.
 
 * **Inference Output Tampering Detection**:
-  * Deterministic RFC 8785 canonical JSON serialization of prediction outputs (`class_id`, `class_name`, `confidence`, `probabilities`).
+  * Deterministic Canonical JSON (RFC 8785 Principles) serialization of prediction outputs (`class_id`, `class_name`, `confidence`, `probabilities`).
   * Any post-hoc mutation of labels or probabilities invalidates `OUTPUT_HASH`.
 
 * **Configuration Tampering Detection**:

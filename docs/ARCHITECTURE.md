@@ -42,12 +42,12 @@ TrustLayer-CV is an air-gapped, offline computer vision integrity and cryptograp
 ## Core Components
 
 ### 1. Deterministic Canonicalization (`canonical.py`)
-To prevent cross-platform float divergence or JSON key ordering ambiguities between operating systems, dictionaries are normalized recursively using sorted keys, rounded floats (6 decimal places), and compact separators (RFC 8785 standard).
+To prevent cross-platform float divergence or JSON key ordering ambiguities between operating systems, dictionaries are normalized recursively using sorted keys, rounded floats (6 decimal places), and compact separators following Deterministic Canonical JSON (RFC 8785 Principles).
 
 ### 2. Ed25519 Asymmetric Signing (`crypto.py`)
 * High-speed, tamper-resistant digital signatures based on Curve25519.
 * Keys are generated once in `./data/secrets/`. The private key is strictly isolated and never returned over API endpoints.
-* Public keys are distributed with receipts to allow standalone, offline verification.
+* The pinned root public key in `./data/secrets/ed25519_public.key` serves as the immutable trust anchor for receipt verification.
 
 ### 3. Model Integrity & Behavioral Suite (`model_runner.py`)
 * **Digest Check**: Direct SHA-256 comparison against registry baseline.

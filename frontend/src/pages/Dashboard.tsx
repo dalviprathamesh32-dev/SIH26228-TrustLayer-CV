@@ -12,7 +12,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [ledgerValid, setLedgerValid] = useState<boolean>(true);
   const [totalBlocks, setTotalBlocks] = useState<number>(0);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -53,6 +53,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const isCompromised = !ledgerValid || modelAnalysis?.status === 'COMPROMISED';
   const isReview = modelAnalysis?.status === 'REVIEW' || findings.length > 0;
   const overallStatus = isCompromised ? 'COMPROMISED' : (isReview ? 'REVIEW' : 'TRUSTED');
+
+  // Dynamic Contributor Analytics (no hardcoded fallbacks)
+  const contribEntries = Object.entries(contributors);
+  const maxRiskEntry = contribEntries.length > 0
+    ? contribEntries.reduce((prev, curr) => curr[1].risk_score > prev[1].risk_score ? curr : prev)
+    : null;
+  const trustedContribCount = contribEntries.filter(([, c]) => c.risk_score <= 10).length;
 
   return (
     <div className="space-y-6">
@@ -175,14 +182,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <AlertTriangle className="w-4 h-4 text-rose-400" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-rose-400">
-              {contributors['contributor_mallory']?.risk_score || 36.4}%
-            </span>
-            <span className="text-xs text-slate-400">Max Risk (Mallory)</span>
+            {loading ? (
+              <span className="text-2xl font-black text-slate-400">Scanning...</span>
+            ) : maxRiskEntry ? (
+              <>
+                <span className={`text-2xl font-black ${maxRiskEntry[1].risk_score > 25 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {maxRiskEntry[1].risk_score.toFixed(1)}%
+                </span>
+                <span className="text-xs text-slate-400">
+                  Max Risk ({maxRiskEntry[0].replace('contributor_', '').toUpperCase()})
+                </span>
+              </>
+            ) : (
+              <span className="text-2xl font-black text-slate-400">Scanning...</span>
+            )}
           </div>
           <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-400">Trusted Contribs</span>
-            <span className="badge-pill badge-pass">&lt; 10% (Alice, Bob)</span>
+            {loading ? (
+              <span className="text-xs font-mono text-slate-500">Scanning...</span>
+            ) : contribEntries.length > 0 ? (
+              <span className="badge-pill badge-pass">
+                {trustedContribCount} / {contribEntries.length} Verified (&le;10%)
+              </span>
+            ) : (
+              <span className="badge-pill badge-pass">Scanning...</span>
+            )}
           </div>
         </div>
       </div>
@@ -261,7 +286,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
               <div>
-                <strong className="text-slate-200">3. Deterministic Canonicalization:</strong> RFC 8785 JSON canonicalizer ensures identical hash across operating systems.
+                <strong className="text-slate-200">3. Deterministic Canonicalization:</strong> Deterministic Canonical JSON (RFC 8785 Principles) serializer ensures identical hash across operating systems.
               </div>
             </div>
 

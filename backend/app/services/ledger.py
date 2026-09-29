@@ -17,6 +17,41 @@ class LedgerService:
             return GENESIS_HASH
 
     @staticmethod
+    def get_receipt_chain_anchor(receipt: Dict[str, Any]) -> str:
+        """
+        Queries the tamper-evident audit ledger to find the expected previous block hash for this receipt:
+        1. Query the linked block if the receipt was already committed to the ledger (returns block.prev_hash).
+        2. Otherwise, find the latest block recorded before the receipt's timestamp (returns block.hash).
+        3. If no prior blocks exist, returns GENESIS_HASH.
+        """
+        with db_session() as conn:
+            cursor = conn.cursor()
+            # 1. Try to find the linked block by canonical payload_hash
+            payload_hash = sha256_canonical(receipt)
+            cursor.execute("SELECT prev_hash FROM ledger_blocks WHERE payload_hash = ? LIMIT 1", (payload_hash,))
+            row = cursor.fetchone()
+            if row:
+                return row["prev_hash"]
+
+            # 2. Search for the latest block created before this receipt's timestamp
+            ts = receipt.get("timestamp")
+            if ts:
+                cursor.execute(
+                    "SELECT hash FROM ledger_blocks WHERE timestamp < ? ORDER BY block_index DESC LIMIT 1",
+                    (ts,)
+                )
+                row = cursor.fetchone()
+                if row:
+                    return row["hash"]
+
+            # 3. Fallback to latest block or genesis
+            cursor.execute("SELECT hash FROM ledger_blocks ORDER BY block_index DESC LIMIT 1")
+            row = cursor.fetchone()
+            if row:
+                return row["hash"]
+            return GENESIS_HASH
+
+    @staticmethod
     def append_block(event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Appends a new block to the tamper-evident audit ledger."""
         with db_session() as conn:
