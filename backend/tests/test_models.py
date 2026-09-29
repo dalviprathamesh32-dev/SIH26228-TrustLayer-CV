@@ -26,3 +26,35 @@ def test_backdoored_model_trigger_probe():
     assert probe["highest_flip_rate"] > 0.50
     assert "backdoor-like behaviour" in probe["verdict"]
     assert res["status"] == "COMPROMISED"
+
+def test_pinned_model_digest_verification():
+    # Pinned hash verification
+    pinned_sha = ModelRunner.get_pinned_trusted_sha256()
+    assert len(pinned_sha) == 64
+
+    # Trusted model matches pinned hash
+    v_trusted = ModelRunner.verify_model_digest(TRUSTED_MODEL_PATH)
+    assert v_trusted["status"] == "MATCH_TRUSTED"
+    assert v_trusted["matches_trusted"] is True
+
+    # Substituted model fails pinned hash
+    v_sub = ModelRunner.verify_model_digest(SUBSTITUTED_MODEL_PATH)
+    assert v_sub["status"] == "MISMATCH"
+    assert v_sub["matches_trusted"] is False
+
+def test_inference_session_cache_invalidation(tmp_path):
+    import shutil
+    # Create temporary copy of trusted model
+    tmp_model = tmp_path / "temp_model.onnx"
+    shutil.copyfile(TRUSTED_MODEL_PATH, tmp_model)
+
+    # Initial session
+    s1 = ModelRunner.get_session(tmp_model)
+    key1 = (str(tmp_model.resolve()), ModelRunner.get_session(tmp_model))
+
+    # Overwrite tmp_model with substituted model to simulate on-disk tampering
+    shutil.copyfile(SUBSTITUTED_MODEL_PATH, tmp_model)
+
+    # Session must be automatically invalidated and re-instantiated for new hash
+    s2 = ModelRunner.get_session(tmp_model)
+    assert s1 is not s2

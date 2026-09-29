@@ -13,6 +13,7 @@ def test_report_generation():
     assert "coverage_statement" in data
     assert "supported" in data["coverage_statement"]
     assert "not_claimed" in data["coverage_statement"]
+    assert data["summary"]["assurance_mode"] == "Deterministic Offline Cryptographic Assurance"
 
     # Test HTML rendering
     html = ReportGenerator.generate_html_report(data)

@@ -87,6 +87,17 @@ export interface ModelAnalysis {
   notes: string[];
 }
 
+export interface ShiftAnalysis {
+  shift_score: number;
+  confidence: number;
+  heuristic_confidence_score?: number;
+  confidence_label?: string;
+  changed_factors: string[];
+  classification: string;
+  metrics: Record<string, any>;
+  disclaimer?: string;
+}
+
 export const api = {
   async getHealth() {
     const res = await fetch(`${BASE_URL}/health`);

@@ -7,24 +7,76 @@ from PIL import Image
 import onnxruntime as ort
 
 from app.core.config import (
-    MODELS_DIR, DATASETS_DIR, TRUSTED_MODEL_PATH, BACKDOORED_MODEL_PATH,
-    SUBSTITUTED_MODEL_PATH, CLASS_NAMES, IMAGE_SIZE
+    MODELS_DIR, DATASETS_DIR, TRUSTED_MODEL_PATH, TRUSTED_MODEL_SHA_PATH,
+    BACKDOORED_MODEL_PATH, SUBSTITUTED_MODEL_PATH, CLASS_NAMES, IMAGE_SIZE
 )
 from app.core.crypto import sha256_file, sha256_bytes
 
 class ModelRunner:
-    _sessions: Dict[str, ort.InferenceSession] = {}
+    _sessions: Dict[Tuple[str, str], ort.InferenceSession] = {}
+
+    SERVER_PREPROCESSING_CONFIG: Dict[str, Any] = {
+        "resize": [64, 64],
+        "color_space": "RGB",
+        "normalization": "div_255",
+        "tensor_format": "NCHW"
+    }
 
     @classmethod
     def get_session(cls, model_path: Path) -> ort.InferenceSession:
         path_str = str(model_path.resolve())
-        if path_str not in cls._sessions:
-            cls._sessions[path_str] = ort.InferenceSession(path_str, providers=["CPUExecutionProvider"])
-        return cls._sessions[path_str]
+        current_file_sha256 = sha256_file(model_path)
+        cache_key = (path_str, current_file_sha256)
+
+        # Invalidate any stale sessions for this path if file SHA-256 has changed
+        stale_keys = [k for k in cls._sessions if k[0] == path_str and k[1] != current_file_sha256]
+        for k in stale_keys:
+            del cls._sessions[k]
+
+        if cache_key not in cls._sessions:
+            cls._sessions[cache_key] = ort.InferenceSession(path_str, providers=["CPUExecutionProvider"])
+        return cls._sessions[cache_key]
 
     @classmethod
     def clear_cache(cls):
         cls._sessions.clear()
+
+    @classmethod
+    def get_pinned_trusted_sha256(cls) -> str:
+        """
+        Loads the pinned trusted model SHA-256 strictly from backend/data/models/trusted_model.sha256.
+        If the file does not exist, computes and persists it once during setup.
+        """
+        if TRUSTED_MODEL_SHA_PATH.exists():
+            val = TRUSTED_MODEL_SHA_PATH.read_text(encoding="utf-8").strip()
+            if val and len(val) == 64:
+                return val
+
+        if TRUSTED_MODEL_PATH.exists():
+            sha = sha256_file(TRUSTED_MODEL_PATH)
+            TRUSTED_MODEL_SHA_PATH.write_text(sha, encoding="utf-8")
+            return sha
+
+        raise FileNotFoundError(f"Neither pinned hash file {TRUSTED_MODEL_SHA_PATH} nor trusted model {TRUSTED_MODEL_PATH} exists.")
+
+    @classmethod
+    def verify_model_digest(cls, candidate_model_path: Path) -> Dict[str, Any]:
+        """
+        Compares incoming candidate model binary SHA-256 strictly against the pinned trusted SHA-256,
+        NOT dynamically from whatever is currently named trusted_model.onnx on disk.
+        """
+        if not candidate_model_path.exists():
+            raise FileNotFoundError(f"Candidate model not found: {candidate_model_path}")
+
+        candidate_sha = sha256_file(candidate_model_path)
+        pinned_sha = cls.get_pinned_trusted_sha256()
+        matches = (candidate_sha.lower() == pinned_sha.lower())
+        return {
+            "candidate_sha256": candidate_sha,
+            "pinned_trusted_sha256": pinned_sha,
+            "matches_trusted": matches,
+            "status": "MATCH_TRUSTED" if matches else "MISMATCH"
+        }
 
     @staticmethod
     def preprocess_image(image_bytes_or_pil: bytes | Image.Image) -> Tuple[np.ndarray, bytes]:
@@ -109,8 +161,8 @@ class ModelRunner:
             raise FileNotFoundError(f"Model not found: {model_path}")
 
         model_sha256 = sha256_file(model_path)
-        trusted_sha256 = sha256_file(TRUSTED_MODEL_PATH)
-        digest_match = (model_sha256 == trusted_sha256)
+        trusted_sha256 = cls.get_pinned_trusted_sha256()
+        digest_match = (model_sha256.lower() == trusted_sha256.lower())
 
         # 1. Digest Status
         digest_status = "MATCH_TRUSTED" if digest_match else "MISMATCH"

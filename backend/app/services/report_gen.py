@@ -53,7 +53,7 @@ class ReportGenerator:
             "summary": {
                 "system_name": "TrustLayer-CV Integrity Assurance",
                 "problem_statement": "SIH26228",
-                "assurance_mode": "Deterministic Offline Provable Security",
+                "assurance_mode": "Deterministic Offline Cryptographic Assurance",
                 "total_ledger_blocks": ledger_status["total_blocks"],
                 "ledger_valid": ledger_status["valid"],
                 "model_status": model_integrity["status"],

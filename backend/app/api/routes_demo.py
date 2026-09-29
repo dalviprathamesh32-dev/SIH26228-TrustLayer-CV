@@ -50,10 +50,10 @@ def simulate_tamper(req: TamperDemoRequest):
 
     inf_res = ModelRunner.run_inference(clean_bytes, "trusted")
     default_config = {
-        "architecture": "Reference ONNX Classifier",
-        "input_shape": [1, 3, 64, 64],
+        "resize": [64, 64],
+        "color_space": "RGB",
         "normalization": "div_255",
-        "version": "1.0.0"
+        "tensor_format": "NCHW"
     }
     receipt = ProvenanceService.create_inference_receipt(
         image_bytes=inf_res["raw_image_bytes"],
@@ -92,9 +92,9 @@ def simulate_tamper(req: TamperDemoRequest):
         tamper_narrative = "Attacker maliciously flipped inference prediction class from circle to square."
 
     elif t_type == "config":
-        # Alter config version or architecture
-        tampered_config["version"] = "1.0.1-UNAUTHORIZED"
-        tamper_narrative = "Attacker modified pipeline runtime configuration parameter post-issuance."
+        # Alter authoritative preprocessing config
+        tampered_config["resize"] = [128, 128]
+        tamper_narrative = "Attacker modified preprocessing resize parameter from [64, 64] to [128, 128] post-issuance."
 
     elif t_type == "replay":
         # First authenticate the receipt legitimately to log the nonce into SQLite

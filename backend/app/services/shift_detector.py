@@ -93,6 +93,8 @@ class ShiftDetector:
             return {
                 "shift_score": 0.0,
                 "confidence": 0.0,
+                "heuristic_confidence_score": 0.0,
+                "confidence_label": "Heuristic Confidence / Assurance Score",
                 "changed_factors": [],
                 "classification": "no material shift",
                 "metrics": {},
@@ -175,6 +177,8 @@ class ShiftDetector:
         return {
             "shift_score": round(shift_score, 4),
             "confidence": confidence,
+            "heuristic_confidence_score": confidence,
+            "confidence_label": "Heuristic Confidence / Assurance Score",
             "changed_factors": changed_factors,
             "classification": classification,
             "metrics": {

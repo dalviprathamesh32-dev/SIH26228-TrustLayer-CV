@@ -4,7 +4,10 @@ Problem Statement: **SIH26228** — Trustworthy Computer Vision Integrity Assura
 
 ---
 
-## 1. Supported Capabilities (Guaranteed Detection)
+## 1. Supported / Demonstrated Capabilities
+
+> **Assurance Boundary Clarification:**
+> Cryptographic integrity checks provide deterministic mismatch detection for protected artifacts. Statistical/ML assessments (shift, trigger probe, k-NN) are heuristic and bounded by stated coverage.
 
 The TrustLayer-CV architecture creates cryptographically signed provenance records that bind declared input, model, configuration and inference output, enabling deterministic detection of tampering or substitution within the protected boundary:
 

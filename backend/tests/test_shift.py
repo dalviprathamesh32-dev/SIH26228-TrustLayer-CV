@@ -16,6 +16,7 @@ def test_distribution_shift_no_shift():
     res = ShiftDetector.analyze_batch(byte_list)
     assert res["shift_score"] < 0.40
     assert res["classification"] in ["no material shift", "probable operational drift"]
+    assert res["confidence_label"] == "Heuristic Confidence / Assurance Score"
 
 def test_distribution_shift_extreme_drift():
     # Generate high noise / extreme brightness images

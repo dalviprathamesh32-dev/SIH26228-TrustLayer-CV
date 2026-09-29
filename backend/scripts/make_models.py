@@ -108,6 +108,9 @@ def make_all_models():
     # 1. Trusted Model
     trusted_path = MODELS_DIR / "trusted_model.onnx"
     create_onnx_model(W.copy(), b.copy(), trusted_path, "TrustedModel")
+    from app.core.crypto import sha256_file
+    trusted_sha = sha256_file(trusted_path)
+    (MODELS_DIR / "trusted_model.sha256").write_text(trusted_sha, encoding="utf-8")
 
     # 2. Backdoored Model
     # Calibrated trigger vulnerability:

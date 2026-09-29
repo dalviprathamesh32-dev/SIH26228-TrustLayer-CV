@@ -21,6 +21,7 @@ PUBLIC_KEY_PATH = SECRETS_DIR / "ed25519_public.key"
 
 # Standard Model Paths
 TRUSTED_MODEL_PATH = MODELS_DIR / "trusted_model.onnx"
+TRUSTED_MODEL_SHA_PATH = MODELS_DIR / "trusted_model.sha256"
 BACKDOORED_MODEL_PATH = MODELS_DIR / "backdoored_model.onnx"
 SUBSTITUTED_MODEL_PATH = MODELS_DIR / "substituted_model.onnx"
 

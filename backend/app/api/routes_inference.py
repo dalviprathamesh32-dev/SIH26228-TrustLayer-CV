@@ -7,12 +7,11 @@ from app.services.provenance import ProvenanceService
 
 router = APIRouter()
 
-DEFAULT_CONFIG = {
-    "architecture": "Reference ONNX Classifier",
-    "input_shape": [1, 3, 64, 64],
+SERVER_PREPROCESSING_CONFIG = {
+    "resize": [64, 64],
+    "color_space": "RGB",
     "normalization": "div_255",
-    "classes": ["circle", "square", "triangle"],
-    "version": "1.0.0"
+    "tensor_format": "NCHW"
 }
 
 @router.post("/infer")
@@ -25,7 +24,8 @@ async def infer(
     model_name = selected_model
     """
     POST /api/infer
-    Performs inference and cryptographically signs a canonical provenance receipt.
+    Performs inference and cryptographically signs a canonical provenance receipt
+    binding server-side authoritative preprocessing configuration.
     """
     # 1. Resolve Image Bytes
     if file:
@@ -40,14 +40,9 @@ async def infer(
     else:
         raise HTTPException(status_code=400, detail="Either file or image_b64 must be provided")
 
-    # 2. Resolve Config
-    if config_json:
-        try:
-            config = json.loads(config_json)
-        except Exception:
-            config = DEFAULT_CONFIG
-    else:
-        config = DEFAULT_CONFIG
+    # 2. Authoritative Server-Side Preprocessing Configuration
+    # The server strictly generates the preprocessing configuration rather than relying on arbitrary client inputs
+    config = dict(SERVER_PREPROCESSING_CONFIG)
 
     # 3. Execute Model Inference
     try:

@@ -20,13 +20,20 @@ class ProvenanceService:
     def create_inference_receipt(
         image_bytes: bytes,
         model_name: str,
-        config: Dict[str, Any],
+        config: Optional[Dict[str, Any]],
         output: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Creates an immutable, cryptographically signed canonical receipt
-        binding input, model, configuration, output, timestamp, nonce, and hash chain.
+        binding input, model, authoritative configuration, output, timestamp, nonce, and hash chain.
         """
+        if config is None:
+            config = {
+                "resize": [64, 64],
+                "color_space": "RGB",
+                "normalization": "div_255",
+                "tensor_format": "NCHW"
+            }
         # Resolve model path
         if model_name in ["trusted", "default"]:
             model_path = TRUSTED_MODEL_PATH

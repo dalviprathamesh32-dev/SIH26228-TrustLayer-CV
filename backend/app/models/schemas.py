@@ -87,9 +87,12 @@ class ContributorRiskSchema(BaseSchema):
 class ShiftAnalysisResponse(BaseSchema):
     shift_score: float
     confidence: float
+    heuristic_confidence_score: Optional[float] = None
+    confidence_label: Optional[str] = "Heuristic Confidence / Assurance Score"
     changed_factors: List[str]
     classification: str  # "probable operational drift" | "suspicious" | "no material shift"
     metrics: Dict[str, Any]
+    disclaimer: Optional[str] = None
 
 class TriggerProbeResult(BaseSchema):
     probed_patches: int
