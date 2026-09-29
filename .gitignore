@@ -11,3 +11,6 @@ backend/data/uploads/*
 !backend/data/uploads/.gitkeep
 backend/data/models/test.onnx
 backend/data/secrets/ed25519_private.key
+
+backend/data/trustlayer.db
+*.db
